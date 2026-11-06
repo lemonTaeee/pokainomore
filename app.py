@@ -135,37 +135,56 @@ def signup():
 @app.route("/dashboard/<int:student_id>")
 def show_dashboard(student_id):
     student = Student.query.get_or_404(student_id)
+    now = datetime.now()
 
     # 1. Fetch budget
     student_budget = Budget.query.filter_by(student_id=student_id).first()
     total_budget = student_budget.total_budget if student_budget else 500.00
 
-    # 2. Fetch transactions ordered by creation date
-    transactions = (
+    # 2. Fetch transactions and filter for current month ONLY
+    current_month_str = now.strftime("%Y-%m")
+    all_transactions = (
         Transaction.query.filter_by(student_id=student_id)
         .order_by(Transaction.created_at.asc())
         .all()
     )
 
+    transactions = [
+        t for t in all_transactions
+        if t.created_at and t.created_at.startswith(current_month_str)
+    ]
+
     total_spent = sum(t.amount for t in transactions)
     remaining_balance = total_budget - total_spent
 
     # 3. Dynamic Chart Labels & Data (Current Month Trajectory)
-    now = datetime.now()
-    chart_labels = [f"{now.strftime('%b')} 1"]
-    chart_values = [total_budget]
-    running_balance = total_budget
-
+    sorted_txs = []
     for tx in transactions:
-        running_balance -= tx.amount
         try:
             tx_dt = datetime.strptime(tx.created_at, "%Y-%m-%d %H:%M:%S")
-            formatted_label = tx_dt.strftime("%b %d")
         except Exception:
-            formatted_label = tx.created_at.split(" ")[0]
+            tx_dt = now
+        sorted_txs.append((tx_dt, float(tx.amount)))
 
-        chart_labels.append(formatted_label)
-        chart_values.append(round(running_balance, 2))
+    sorted_txs.sort(key=lambda item: item[0])
+
+    daily_balances = {}
+    running_balance = total_budget
+
+    for tx_dt, amount in sorted_txs:
+        running_balance -= amount
+        date_label = tx_dt.strftime("%b %d")
+        daily_balances[date_label] = round(running_balance, 2)
+
+    chart_labels = [f"{now.strftime('%b')} 01"]
+    chart_values = [total_budget]
+
+    for label, val in daily_balances.items():
+        if label == chart_labels[0]:
+            chart_values[0] = val
+        else:
+            chart_labels.append(label)
+            chart_values.append(val)
 
     # 4. Time & Pokai Calculations
     _, total_days_in_month = calendar.monthrange(now.year, now.month)
@@ -199,18 +218,16 @@ def show_dashboard(student_id):
     top_category = None
 
     if transactions:
-        # Highest and Lowest Expense
-        sorted_txs = sorted(transactions, key=lambda t: t.amount, reverse=True)
+        sorted_by_amount = sorted(transactions, key=lambda t: t.amount, reverse=True)
         highest_expense = {
-            "title": sorted_txs[0].description or "Expense",
-            "amount": float(sorted_txs[0].amount),
+            "title": sorted_by_amount[0].description or "Expense",
+            "amount": float(sorted_by_amount[0].amount),
         }
         lowest_expense = {
-            "title": sorted_txs[-1].description or "Expense",
-            "amount": float(sorted_txs[-1].amount),
+            "title": sorted_by_amount[-1].description or "Expense",
+            "amount": float(sorted_by_amount[-1].amount),
         }
 
-        # Category Aggregation (Uses transaction_type or description)
         category_totals = defaultdict(float)
         for t in transactions:
             cat_name = getattr(t, "transaction_type", None) or t.description or "General"
