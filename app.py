@@ -6,6 +6,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
+MYT = timezone(timedelta(hours=8))
 app = Flask(__name__)
 
 # ----------------------------------------------------------------------
@@ -37,8 +38,10 @@ class Transaction(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey("student.student_id"), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200), nullable=True)
-    transaction_type = db.Column(db.String(50), default="Expense")  # "Income" or Category/Subcategory name
-    created_at = db.Column(db.String(50), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    transaction_type = db.Column(db.String(50), default="Expense")
+    created_at = db.Column(
+        db.String(50), default=lambda: datetime.now(MYT).strftime("%Y-%m-%d %H:%M:%S")
+    )
 
 class Budget(db.Model):
     __tablename__ = "budget"
@@ -114,7 +117,7 @@ def set_budget(student_id):
 @app.route("/dashboard/<int:student_id>")
 def show_dashboard(student_id):
     student = Student.query.get_or_404(student_id)
-    now = datetime.now()
+    now = datetime.now(MYT)
 
     # 1. Fetch budget
     student_budget = Budget.query.filter_by(student_id=student_id).first()
