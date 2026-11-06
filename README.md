@@ -74,9 +74,9 @@ The application is deployed using Render.
 
 **Live Demo:** https://pokainomore.onrender.com
 
-## Updating the Repository
+## Updating the Repository (Example)
 
-After making changes to the README or project files, run the following commands to push updates to GitHub:
+After making changes to the project files, run the following commands to push updates to GitHub:
 
 ```bash
 git add README.md
