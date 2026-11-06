@@ -15,7 +15,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
     "postgresql+psycopg2://postgres.qdijmccwmoxakkngfsjv:3gGs6QfPXyLqfPfl@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 app.config["SECRET_KEY"] = os.urandom(24).hex()
 
 db = SQLAlchemy(app)
@@ -24,50 +23,33 @@ db = SQLAlchemy(app)
 # DATABASE MODELS
 # ----------------------------------------------------------------------
 
-
 class Student(db.Model):
     __tablename__ = "student"
-
     student_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
-
     transactions = db.relationship("Transaction", backref="student", lazy=True)
     budgets = db.relationship("Budget", backref="student", lazy=True)
 
-
 class Transaction(db.Model):
     __tablename__ = "transaction"
-
     transaction_id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(
-        db.Integer, db.ForeignKey("student.student_id"), nullable=False
-    )
+    student_id = db.Column(db.Integer, db.ForeignKey("student.student_id"), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200), nullable=True)
-    transaction_type = db.Column(db.String(50), default="Expense")
-    created_at = db.Column(
-        db.String(50), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    )
-
+    transaction_type = db.Column(db.String(50), default="Expense")  # "Income" or Category/Subcategory name
+    created_at = db.Column(db.String(50), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 class Budget(db.Model):
     __tablename__ = "budget"
-
     budget_id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(
-        db.Integer, db.ForeignKey("student.student_id"), nullable=False
-    )
+    student_id = db.Column(db.Integer, db.ForeignKey("student.student_id"), nullable=False)
     total_budget = db.Column(db.Float, nullable=False, default=500.0)
-    month = db.Column(
-        db.String(20), default=lambda: datetime.now().strftime("%B %Y")
-    )
-
+    month = db.Column(db.String(20), default=lambda: datetime.now().strftime("%B %Y"))
 
 # ----------------------------------------------------------------------
 # AUTHENTICATION ROUTES
 # ----------------------------------------------------------------------
-
 
 @app.route("/")
 @app.route("/login", methods=["GET", "POST"])
@@ -75,20 +57,14 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-
         student = Student.query.filter_by(username=username).first()
 
         if student and check_password_hash(student.password, password):
-            return redirect(
-                url_for("show_dashboard", student_id=student.student_id)
-            )
+            return redirect(url_for("show_dashboard", student_id=student.student_id))
         else:
-            return render_template(
-                "login.html", error="Invalid username or password."
-            )
+            return render_template("login.html", error="Invalid username or password.")
 
     return render_template("login.html")
-
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -98,39 +74,42 @@ def signup():
         confirm_password = request.form.get("confirm_password")
 
         if password != confirm_password:
-            return render_template(
-                "signup.html", error="Passwords do not match."
-            )
+            return render_template("signup.html", error="Passwords do not match.")
 
         existing_user = Student.query.filter_by(username=username).first()
         if existing_user:
             return render_template("signup.html", error="Username already taken.")
 
         hashed_password = generate_password_hash(password, method="scrypt")
-
         new_student = Student(username=username, password=hashed_password)
         db.session.add(new_student)
         db.session.commit()
 
-        default_budget = Budget(
-            student_id=new_student.student_id, total_budget=500.00
-        )
+        default_budget = Budget(student_id=new_student.student_id, total_budget=500.00)
         db.session.add(default_budget)
         db.session.commit()
-
-        print(
-            f"--> Saved to Supabase! User ID: {new_student.student_id}, Username: {new_student.username}"
-        )
 
         return redirect(url_for("login"))
 
     return render_template("signup.html")
 
-
 # ----------------------------------------------------------------------
-# DASHBOARD & MAIN APP ROUTES
+# BUDGET & DASHBOARD ROUTES
 # ----------------------------------------------------------------------
 
+@app.route("/set-budget/<int:student_id>", methods=["POST"])
+def set_budget(student_id):
+    new_amount = float(request.form.get("total_budget", 500.0))
+    student_budget = Budget.query.filter_by(student_id=student_id).first()
+    
+    if student_budget:
+        student_budget.total_budget = new_amount
+    else:
+        student_budget = Budget(student_id=student_id, total_budget=new_amount)
+        db.session.add(student_budget)
+        
+    db.session.commit()
+    return redirect(url_for("show_dashboard", student_id=student_id))
 
 @app.route("/dashboard/<int:student_id>")
 def show_dashboard(student_id):
@@ -141,7 +120,7 @@ def show_dashboard(student_id):
     student_budget = Budget.query.filter_by(student_id=student_id).first()
     total_budget = student_budget.total_budget if student_budget else 500.00
 
-    # 2. Fetch transactions and filter for current month ONLY
+    # 2. Fetch current month transactions ONLY
     current_month_str = now.strftime("%Y-%m")
     all_transactions = (
         Transaction.query.filter_by(student_id=student_id)
@@ -154,25 +133,31 @@ def show_dashboard(student_id):
         if t.created_at and t.created_at.startswith(current_month_str)
     ]
 
-    total_spent = sum(t.amount for t in transactions)
-    remaining_balance = total_budget - total_spent
+    # Calculate Expenses (anything not Income) vs Income
+    total_spent = sum(t.amount for t in transactions if t.transaction_type != "Income")
+    total_income = sum(t.amount for t in transactions if t.transaction_type == "Income")
+    
+    effective_budget = total_budget + total_income
+    remaining_balance = effective_budget - total_spent
 
-    # 3. Dynamic Chart Labels & Data (Current Month Trajectory)
+    # 3. Dynamic Chart Trajectory (Strictly Chronological)
     sorted_txs = []
     for tx in transactions:
         try:
             tx_dt = datetime.strptime(tx.created_at, "%Y-%m-%d %H:%M:%S")
         except Exception:
             tx_dt = now
-        sorted_txs.append((tx_dt, float(tx.amount)))
+        # Positive for Income, Negative for Expenses
+        change = tx.amount if tx.transaction_type == "Income" else -tx.amount
+        sorted_txs.append((tx_dt, change))
 
     sorted_txs.sort(key=lambda item: item[0])
 
     daily_balances = {}
     running_balance = total_budget
 
-    for tx_dt, amount in sorted_txs:
-        running_balance -= amount
+    for tx_dt, change in sorted_txs:
+        running_balance += change
         date_label = tx_dt.strftime("%b %d")
         daily_balances[date_label] = round(running_balance, 2)
 
@@ -217,27 +202,27 @@ def show_dashboard(student_id):
     lowest_expense = None
     top_category = None
 
-    if transactions:
-        sorted_by_amount = sorted(transactions, key=lambda t: t.amount, reverse=True)
+    expense_txs = [t for t in transactions if t.transaction_type != "Income"]
+    if expense_txs:
+        sorted_by_amount = sorted(expense_txs, key=lambda t: t.amount, reverse=True)
         highest_expense = {
-            "title": sorted_by_amount[0].description or "Expense",
+            "title": sorted_by_amount[0].description or sorted_by_amount[0].transaction_type,
             "amount": float(sorted_by_amount[0].amount),
         }
         lowest_expense = {
-            "title": sorted_by_amount[-1].description or "Expense",
+            "title": sorted_by_amount[-1].description or sorted_by_amount[-1].transaction_type,
             "amount": float(sorted_by_amount[-1].amount),
         }
 
         category_totals = defaultdict(float)
-        for t in transactions:
-            cat_name = getattr(t, "transaction_type", None) or t.description or "General"
+        for t in expense_txs:
+            cat_name = t.transaction_type or t.description or "General"
             category_totals[cat_name] += float(t.amount)
 
         if category_totals and total_spent > 0:
             top_cat_name = max(category_totals, key=category_totals.get)
             top_cat_amount = category_totals[top_cat_name]
             top_cat_percentage = (top_cat_amount / total_spent) * 100
-
             top_category = {
                 "name": top_cat_name,
                 "amount": top_cat_amount,
@@ -247,6 +232,7 @@ def show_dashboard(student_id):
     prediction_data = {
         "student_name": student.username,
         "total_budget": total_budget,
+        "total_income": total_income,
         "current_spent": total_spent,
         "remaining_budget": remaining_balance,
         "pokai_date": pokai_date_str,
@@ -267,7 +253,6 @@ def show_dashboard(student_id):
         active_page="dashboard",
     )
 
-
 @app.route("/history/<int:student_id>")
 def show_history(student_id):
     tx_list = Transaction.query.filter_by(student_id=student_id).all()
@@ -278,13 +263,14 @@ def show_history(student_id):
         active_page="history",
     )
 
-
 @app.route("/add-transaction/<int:student_id>", methods=["GET", "POST"])
 def add_transaction(student_id):
     if request.method == "POST":
         amount = float(request.form.get("amount", 0))
         description = request.form.get("description")
-        transaction_type = request.form.get("transaction_type")
+        flow_type = request.form.get("flow_type", "Expense")
+        
+        transaction_type = "Income" if flow_type == "Income" else request.form.get("transaction_type", "General")
 
         new_tx = Transaction(
             student_id=student_id,
@@ -303,14 +289,13 @@ def add_transaction(student_id):
         active_page="add_transaction",
     )
 
-
 # ----------------------------------------------------------------------
 # DATABASE INITIALIZATION
 # ----------------------------------------------------------------------
 with app.app_context():
     try:
         db.create_all()
-        print("--> Tables reset and created successfully in Supabase!")
+        print("--> Database synchronized successfully!")
     except Exception as e:
         print(f"--> Database Notice: {e}")
 
