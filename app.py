@@ -1,12 +1,14 @@
 import calendar
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from flask import Flask, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
+# Malaysia Timezone (UTC +8)
 MYT = timezone(timedelta(hours=8))
+
 app = Flask(__name__)
 
 # ----------------------------------------------------------------------
@@ -48,7 +50,7 @@ class Budget(db.Model):
     budget_id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey("student.student_id"), nullable=False)
     total_budget = db.Column(db.Float, nullable=False, default=500.0)
-    month = db.Column(db.String(20), default=lambda: datetime.now().strftime("%B %Y"))
+    month = db.Column(db.String(20), default=lambda: datetime.now(MYT).strftime("%B %Y"))
 
 # ----------------------------------------------------------------------
 # AUTHENTICATION ROUTES
@@ -136,21 +138,19 @@ def show_dashboard(student_id):
         if t.created_at and t.created_at.startswith(current_month_str)
     ]
 
-    # Calculate Expenses (anything not Income) vs Income
     total_spent = sum(t.amount for t in transactions if t.transaction_type != "Income")
     total_income = sum(t.amount for t in transactions if t.transaction_type == "Income")
     
     effective_budget = total_budget + total_income
     remaining_balance = effective_budget - total_spent
 
-    # 3. Dynamic Chart Trajectory (Strictly Chronological)
+    # 3. Dynamic Chart Trajectory
     sorted_txs = []
     for tx in transactions:
         try:
             tx_dt = datetime.strptime(tx.created_at, "%Y-%m-%d %H:%M:%S")
         except Exception:
             tx_dt = now
-        # Positive for Income, Negative for Expenses
         change = tx.amount if tx.transaction_type == "Income" else -tx.amount
         sorted_txs.append((tx_dt, change))
 
