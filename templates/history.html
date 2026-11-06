@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokaiNoMore - History Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 antialiased min-h-screen flex">
+
+    <!-- INCLUDED REUSABLE SIDEBAR -->
+    {% include 'sidebar.html' %}
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 p-8 space-y-6 overflow-y-auto">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800">Transaction History Log</h2>
+                <p class="text-xs text-slate-400">View and track all recorded transactions</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase">
+                    <tr>
+                        <th class="p-4">Date</th>
+                        <th class="p-4">Description</th>
+                        <th class="p-4">Type</th>
+                        <th class="p-4">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 text-slate-500">{{ tx.created_at }}</td>
+                        <td class="p-4 font-semibold text-slate-800">{{ tx.description or 'Expense' }}</td>
+                        <td class="p-4"><span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold">{{ tx.transaction_type or 'Expense' }}</span></td>
+                        <td class="p-4 font-bold text-slate-800">RM {{ "%.2f"|format(tx.amount) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="p-4 text-center text-slate-400">No transactions found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+</body>
+</html>
