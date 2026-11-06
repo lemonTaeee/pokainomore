@@ -10,14 +10,13 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<!-- FIXED: flex flex-col on mobile, flex-row on desktop (md:) -->
 
 <body class="bg-slate-50 font-sans text-slate-700 antialiased min-h-screen flex flex-col md:flex-row">
 
     <!-- LEFT SIDEBAR -->
     {% include 'sidebar.html' %}
 
-    <!-- MAIN CONTENT AREA (FIXED: p-4 on mobile, p-8 on desktop) -->
+    <!-- MAIN CONTENT AREA -->
     <main class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto w-full">
 
         <!-- Header Bar -->
@@ -104,7 +103,6 @@
                 <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
                     <div
                         class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                        <!-- Credit Card Icon -->
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z">
@@ -119,7 +117,7 @@
                     </div>
                 </div>
 
-                <!-- 3. Calculated Pokai Date Card (Dynamic Warning Color) -->
+                <!-- 3. Calculated Pokai Date Card (Dynamic Warning Colour) -->
                 {% if data.days_left <= 5 or data.remaining_budget <=0 or data.pokai_date=="Already Pokai!" %} {% set
                     card_bg="bg-rose-500/10 border-rose-300" %} {% set icon_bg="bg-rose-500" %} {% set
                     text_color="text-rose-600" %} {% elif data.days_left <=10 %} {% set
@@ -130,7 +128,6 @@
                     <div class="flex items-center space-x-3">
                         <div
                             class="w-10 h-10 rounded-xl flex items-center justify-center text-white {{ icon_bg }} shrink-0">
-                            <!-- Calendar Icon -->
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
@@ -148,14 +145,14 @@
                         ({{ data.days_left }} Days Remaining)
                     </p>
                     <p class="text-[11px] text-slate-500 leading-snug">
-                        Based on your current spending, you will run out of money on this date.
+                        Based on your current average spending of <strong>RM {{ "%.2f"|format(data.avg_daily_spend)
+                            }}/day</strong>, your funds are projected to last until this date.
                     </p>
             </div>
 
             <!-- 4. Daily Spending Limit Card -->
             <div class="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 shadow-sm flex items-start space-x-4">
                 <div class="w-10 h-10 bg-indigo-500 text-white rounded-xl flex items-center justify-center shrink-0">
-                    <!-- Chart Bar Icon -->
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
@@ -175,7 +172,7 @@
 
         </div>
 
-        <!-- RIGHT COLUMN: Chart & Action Button -->
+        <!-- RIGHT COLUMN: Chart, Simulator & Insights -->
         <div class="col-span-12 md:col-span-8 space-y-4">
 
             <!-- Balance Trend Chart Card -->
@@ -194,6 +191,56 @@
                 </div>
             </div>
 
+            <!-- WHAT-IF PURCHASE SIMULATOR CARD -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">💡 "What-If" Purchase Simulator</h3>
+                        <p class="text-xs text-slate-400">Test how a prospective purchase impacts your Pokai trajectory
+                            before spending.</p>
+                    </div>
+                    <span
+                        class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+                        Sandbox Mode
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Item Description</label>
+                        <input type="text" id="simItemName" placeholder="e.g. New Shoes, Concert Ticket"
+                            class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Simulated Price (RM)</label>
+                        <input type="number" id="simPrice" step="0.01" placeholder="150.00" oninput="calculateWhatIf()"
+                            class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Live Impact Preview Box -->
+                <div id="simResultBox" class="hidden mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Simulated Trajectory
+                        Impact</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                        <div class="bg-white p-3 rounded-lg border border-slate-100">
+                            <span class="block text-[10px] uppercase font-semibold text-slate-400">New Balance</span>
+                            <span id="simNewBalance" class="text-sm font-bold text-slate-800">RM 0.00</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-100">
+                            <span class="block text-[10px] uppercase font-semibold text-slate-400">New Daily
+                                Limit</span>
+                            <span id="simNewDailyLimit" class="text-sm font-bold text-slate-800">RM 0.00</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-100">
+                            <span class="block text-[10px] uppercase font-semibold text-slate-400">Pokai Shift</span>
+                            <span id="simDaysShift" class="text-sm font-bold text-slate-800">0 days shift</span>
+                        </div>
+                    </div>
+                    <p id="simAdvice" class="text-xs text-slate-600 mt-3 italic"></p>
+                </div>
+            </div>
+
             <!-- Add New Transaction Button Bar -->
             <a href="/add-transaction/{{ student_id }}"
                 class="w-full bg-[#0A3222] hover:bg-[#114630] text-white py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 shadow-sm transition">
@@ -206,7 +253,6 @@
             <!-- SPENDING INSIGHTS CARDS -->
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
                 <p class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
-                    <!-- Lightbulb Icon -->
                     <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 01-2 2h-0a2 2 0 01-2-2v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
@@ -264,7 +310,15 @@
                         <p class="text-xs font-bold text-emerald-600 mt-1">RM {{ "%.2f"|format(data.current_spent) }}
                         </p>
                     </div>
-
+                    <!-- Insight: Average Daily Spend -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[9px] font-semibold uppercase text-slate-400">Avg Daily Spend</p>
+                        <p class="text-xs font-bold text-slate-800 mt-1">
+                            RM {{ "%.2f"|format(data.avg_daily_spend) }} <span
+                                class="text-[10px] font-normal text-slate-500">/ day</span>
+                        </p>
+                        <p class="text-[10px] text-slate-400">Active pace</p>
+                    </div>
                 </div>
             </div>
 
@@ -274,8 +328,15 @@
 
     </main>
 
-    <!-- DYNAMIC CHART.JS SCRIPT -->
+    <!-- HIDDEN DATA CONTAINER (Passes Jinja data safely to JavaScript) -->
+    <div id="simulatorConfig" data-remaining-budget="{{ data.remaining_budget }}"
+        data-days-left-in-month="{{ data.days_left_in_month }}" data-avg-daily-spend="{{ data.avg_daily_spend }}"
+        data-days-left="{{ data.days_left }}">
+    </div>
+
+    <!-- DYNAMIC CHART.JS & WHAT-IF SIMULATOR SCRIPTS -->
     <script>
+        // Initialize Chart.js Line Chart
         const canvas = document.getElementById('balanceChart');
         const ctx = canvas.getContext('2d');
 
@@ -318,6 +379,61 @@
                 }
             }
         });
+
+        // What-If Purchase Simulator Recalculation Logic
+        function calculateWhatIf() {
+            const config = document.getElementById('simulatorConfig').dataset;
+
+            const currentBalance = parseFloat(config.remainingBudget) || 0;
+            const daysLeftInMonth = parseInt(config.daysLeftInMonth, 10) || 1;
+            const avgDailySpend = parseFloat(config.avgDailySpend) || 0;
+            const originalDaysLeft = parseInt(config.daysLeft, 10) || 0;
+
+            const priceInput = parseFloat(document.getElementById("simPrice").value);
+            const resultBox = document.getElementById("simResultBox");
+            const itemName = document.getElementById("simItemName").value.trim() || "this item";
+
+            if (isNaN(priceInput) || priceInput <= 0) {
+                resultBox.classList.add("hidden");
+                return;
+            }
+
+            resultBox.classList.remove("hidden");
+
+            // Perform calculations
+            const newBalance = currentBalance - priceInput;
+            const newDailyLimit = Math.max(0, newBalance / daysLeftInMonth);
+
+            let newDaysLeft = 0;
+            if (avgDailySpend > 0 && newBalance > 0) {
+                newDaysLeft = Math.floor(newBalance / avgDailySpend);
+            }
+
+            const daysEarlier = Math.max(0, originalDaysLeft - newDaysLeft);
+
+            // Update DOM element values
+            document.getElementById("simNewBalance").innerText = "RM " + newBalance.toFixed(2);
+            document.getElementById("simNewDailyLimit").innerText = "RM " + newDailyLimit.toFixed(2);
+
+            const shiftElement = document.getElementById("simDaysShift");
+            if (newBalance <= 0) {
+                shiftElement.innerText = "Triggers Pokai!";
+                shiftElement.className = "text-sm font-bold text-rose-600";
+            } else {
+                shiftElement.innerText = daysEarlier > 0 ? `${daysEarlier} days earlier` : "No change";
+                shiftElement.className = daysEarlier > 0 ? "text-sm font-bold text-amber-600" : "text-sm font-bold text-emerald-600";
+            }
+
+            const adviceElement = document.getElementById("simAdvice");
+            if (newBalance <= 0) {
+                adviceElement.innerText = `Purchasing ${itemName} will immediately exhaust your remaining balance.`;
+            } else if (daysEarlier > 0) {
+                adviceElement.innerText = `Buying ${itemName} brings your Pokai date forward by ${daysEarlier} day(s) and drops your daily spending limit to RM ${newDailyLimit.toFixed(2)}.`;
+            } else {
+                adviceElement.innerText = `Purchasing ${itemName} is within your current financial cushion.`;
+            }
+        }
+    </script>
     </script>
 </body>
 

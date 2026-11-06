@@ -247,6 +247,8 @@ def show_dashboard(student_id):
         "highest_expense": highest_expense,
         "lowest_expense": lowest_expense,
         "top_category": top_category,
+        "days_left_in_month": days_left_in_month,
+"avg_daily_spend": round(avg_daily_spend, 2)
     }
 
     return render_template(
