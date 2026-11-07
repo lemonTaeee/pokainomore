@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import extract, func
+from sqlalchemy import extract, func, text
 from sqlalchemy.engine.url import make_url
 
 app = Flask(__name__)
@@ -39,7 +39,7 @@ if "sslmode=" not in DATABASE_URL:
     separator = "&" if "?" in DATABASE_URL else "?"
     DATABASE_URL += f"{separator}sslmode=require"
 
-# Log target for verification (omitting password credentials)
+# Log target for verification
 try:
     db_url_parsed = make_url(DATABASE_URL)
     print(
@@ -57,7 +57,7 @@ app.config["SECRET_KEY"] = (
     os.environ.get("SECRET_KEY") or "pokainomore_secret_session_key_2026"
 )
 
-# Fix ERR_FAILED timeouts: Pre-ping connections and recycle idle connections every 5 mins
+# Fix timeouts: Pre-ping connections and recycle idle connections every 5 mins
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
@@ -74,7 +74,7 @@ class Student(db.Model):
     __tablename__ = "student"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    monthly_budget = db.Column(db.Float, nullable=False, default=0.0)
+    monthly_budget = db.Column(db.Float, nullable=False, default=1000.0)
     transactions = db.relationship(
         "Transaction", backref="student", lazy=True, cascade="all, delete-orphan"
     )
@@ -108,10 +108,9 @@ def get_budget_metrics(student_id):
     days_passed = max(1, today.day)
     days_left = max(1, days_in_month - today.day + 1)
 
-    student = Student.query.get(student_id)
+    student = db.session.get(Student, student_id)
     if not student:
-        # Fallback if default student isn't created yet
-        student = Student(id=1, name="Default Student", monthly_budget=1000.0)
+        student = Student(id=student_id, name="Student", monthly_budget=1000.0)
         db.session.add(student)
         db.session.commit()
 
@@ -159,6 +158,21 @@ def get_budget_metrics(student_id):
 
 
 # ----------------------------------------------------------------------
+# AUTO-INITIALIZE & SYNC DB SCHEMA
+# ----------------------------------------------------------------------
+with app.app_context():
+    try:
+        # Validate table columns against current model definition
+        db.session.execute(text("SELECT id, name, monthly_budget FROM student LIMIT 1;"))
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database schema mismatch detected ({e}). Rebuilding tables...", flush=True)
+        db.drop_all()
+        db.create_all()
+        print("Database schema synchronized successfully!", flush=True)
+
+
+# ----------------------------------------------------------------------
 # CLEAN ROUTES (SESSION-BASED)
 # ----------------------------------------------------------------------
 @app.route("/")
@@ -169,7 +183,6 @@ def dashboard():
 
     metrics = get_budget_metrics(student_id)
 
-    # Fetch recent transactions
     recent_transactions = (
         Transaction.query.filter_by(student_id=student_id)
         .order_by(Transaction.date.desc())
@@ -263,7 +276,11 @@ def legacy_history(student_id):
     return redirect(url_for("history"))
 
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("dashboard"))
+
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(host="0.0.0.0", port=10000, debug=True)
