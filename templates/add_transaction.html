@@ -10,197 +10,190 @@
 
 <body class="bg-slate-50 font-sans text-slate-700 antialiased min-h-screen flex flex-col md:flex-row">
 
-    <!-- INCLUDED REUSABLE SIDEBAR -->
+    <!-- REUSABLE SIDEBAR -->
     {% include 'sidebar.html' %}
 
     <!-- MAIN CONTENT AREA -->
     <main class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto w-full">
-        <div>
-            <h2 class="text-2xl font-bold text-slate-800">Log New Transaction</h2>
-            <p class="text-xs text-slate-400">Record your income or daily expenses</p>
+
+        <!-- Header Bar -->
+        <div class="pb-2 border-b border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-800">Add Transaction</h2>
+            <p class="text-xs text-slate-400">Record a new expense or income entry</p>
         </div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            <!-- FORM CARD (7 COLS) -->
-            <form action="/add-transaction/{{ student_id }}" method="POST"
-                class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                
-                <!-- Flow Type (Income vs Expense) -->
-                <div class="space-y-1">
-                    <label class="text-xs font-semibold text-slate-600">Transaction Flow</label>
-                    <select id="flowType" name="flow_type" onchange="handleFlowChange(); calculateImpact();"
-                        class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                        <option value="Expense" selected>Expense (Money Spent)</option>
-                        <option value="Income">Income / Allowance (Money Received)</option>
-                    </select>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
-                <!-- Amount Input -->
+            <!-- LEFT FORM CARD -->
+            <div class="md:col-span-7 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-5">
+                <form action="/add-transaction/{{ student_id }}" method="POST" class="space-y-4">
+
+                    <!-- Flow Type (Expense / Income) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Flow Type</label>
+                        <select id="flow_type" name="flow_type"
+                            class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                            <option value="Expense" selected>Expense (Money Out)</option>
+                            <option value="Income">Income / Allowance (Money In)</option>
+                        </select>
+                    </div>
+
+                    <!-- Category -->
+                    <div id="category_wrapper">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                        <select id="transaction_type" name="transaction_type"
+                            class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                            <option value="Food & Drink">Food & Drink</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Yuran">Yuran</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Study Materials">Study Materials</option>
+                            <option value="Groceries">Groceries</option>
+                            <option value="General">General / Others</option>
+                        </select>
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Amount (RM)</label>
+                        <input type="number" step="0.01" min="0.01" id="amount" name="amount" placeholder="0.00" required
+                            class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                        <input type="text" name="description" placeholder="e.g., Nasi Ayam, Zus Coffee"
+                            class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit"
+                        class="w-full bg-[#0A3222] hover:bg-[#114630] text-white py-3.5 rounded-xl text-xs font-semibold transition shadow-sm">
+                        Save Transaction
+                    </button>
+                </form>
+            </div>
+
+            <!-- RIGHT WHAT-IF PREVIEW CARD -->
+            <div class="md:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Amount (RM)</label>
-                    <input type="number" step="0.01" id="txAmount" name="amount" required placeholder="15.00" oninput="calculateImpact()"
-                        class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-emerald-500">
+                    <h3 class="text-sm font-bold text-slate-800">Transaction Preview</h3>
+                    <p class="text-xs text-slate-400">Estimated change to remaining balance trajectory</p>
                 </div>
 
-                <!-- Category Selector -->
-                <div id="categoryGroup" class="space-y-1">
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Category</label>
-                    <select id="mainCategory" name="transaction_type"
-                        class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-emerald-500 bg-white">
-                        <option value="Food & Drink" selected>Food & Drink</option>
-                        <option value="Transportation">Transportation</option>
-                        <option value="Yuran">Yuran</option>
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Study Materials">Study Materials</option>
-                        <option value="Groceries">Groceries</option>
-                        <option value="General">General / Others</option>
-                    </select>
-                </div>
-
-                <!-- Description / Item Note -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Item Description / Details</label>
-                    <input type="text" name="description" required placeholder="e.g. Nasi Ayam, Zus Coffee, Minyak"
-                        class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-emerald-500">
-                </div>
-
-                <button type="submit"
-                    class="w-full bg-[#0A3222] hover:bg-[#114630] text-white py-3 rounded-xl text-sm font-bold transition">
-                    Save Transaction
-                </button>
-            </form>
-
-            <!-- LIVE IMPACT PREVIEW PANEL (5 COLS) -->
-            <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                <div class="border-b border-slate-100 pb-3">
-                    <h3 class="text-sm font-bold text-slate-800">Transaction Impact Preview</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Estimated change to remaining balance trajectory</p>
-                </div>
-
-                <div id="impactDefault" class="py-10 text-center text-xs text-slate-400">
-                    Enter an amount to calculate impact on projected Pokai date.
-                </div>
-
-                <div id="impactResults" class="hidden space-y-3">
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span class="block text-[10px] font-semibold uppercase text-slate-400">New Balance</span>
-                        <span id="previewBalance" class="text-base font-bold text-slate-800">RM 0.00</span>
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span class="block text-[10px] font-semibold uppercase text-slate-400">New Daily Limit</span>
-                        <span id="previewLimit" class="text-base font-bold text-slate-800">RM 0.00</span>
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span class="block text-[10px] font-semibold uppercase text-slate-400">Pokai Date Shift</span>
-                        <span id="previewShift" class="text-base font-bold text-slate-800">No shift</span>
-                    </div>
-
-                    <p id="previewAdvice" class="text-xs text-slate-500 pt-1 leading-relaxed"></p>
+                <div id="previewContent" class="min-h-[160px] flex flex-col justify-center">
+                    <p class="text-center text-xs text-slate-400 py-8">
+                        Enter an amount to calculate impact on projected Pokai date.
+                    </p>
                 </div>
             </div>
 
         </div>
+
     </main>
 
-    <!-- HIDDEN DATA CONTAINER FOR SAFE JINJA PASSING -->
-    <div id="impactConfig"
-        data-remaining-budget="{{ remaining_budget }}"
-        data-days-left-in-month="{{ days_left_in_month }}"
-        data-avg-daily-spend="{{ avg_daily_spend }}"
-        data-days-left="{{ days_left }}">
-    </div>
-
-    <!-- SCRIPTS -->
+    <!-- LIVE SIMULATION SCRIPT -->
     <script>
-        function handleFlowChange() {
-            const flowType = document.getElementById("flowType").value;
-            const categoryGroup = document.getElementById("categoryGroup");
-            const mainCategory = document.getElementById("mainCategory");
+        const remainingBudget = {{ remaining_budget | default(0) }};
+        const avgDailySpend = {{ avg_daily_spend | default(0) }};
+        const daysLeftInMonth = {{ days_left_in_month | default(1) }};
+        const currentDaysLeft = {{ days_left | default(0) }};
 
-            if (flowType === "Income") {
-                categoryGroup.classList.add("hidden");
-                mainCategory.innerHTML = `<option value="Income" selected>Income</option>`;
-            } else {
-                categoryGroup.classList.remove("hidden");
-                mainCategory.innerHTML = `
-                    <option value="Food & Drink" selected>Food & Drink</option>
-                    <option value="Transportation">Transportation</option>
-                    <option value="Yuran">Yuran</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Study Materials">Study Materials</option>
-                    <option value="Groceries">Groceries</option>
-                    <option value="General">General / Others</option>
+        const amountInput = document.getElementById('amount');
+        const flowTypeSelect = document.getElementById('flow_type');
+        const categoryWrapper = document.getElementById('category_wrapper');
+        const previewContent = document.getElementById('previewContent');
+
+        function updatePreview() {
+            const amt = parseFloat(amountInput.value);
+
+            if (isNaN(amt) || amt <= 0) {
+                previewContent.innerHTML = `
+                    <p class="text-center text-xs text-slate-400 py-8">
+                        Enter an amount to calculate impact on projected Pokai date.
+                    </p>
                 `;
-            }
-        }
-
-        function calculateImpact() {
-            const config = document.getElementById('impactConfig').dataset;
-            const currentBalance = parseFloat(config.remainingBudget) || 0;
-            const daysLeftInMonth = parseInt(config.daysLeftInMonth, 10) || 1;
-            const avgDailySpend = parseFloat(config.avgDailySpend) || 0;
-            const originalDaysLeft = parseInt(config.daysLeft, 10) || 0;
-
-            const amountInput = parseFloat(document.getElementById('txAmount').value);
-            const flowType = document.getElementById('flowType').value;
-            const defaultBox = document.getElementById('impactDefault');
-            const resultsBox = document.getElementById('impactResults');
-
-            if (isNaN(amountInput) || amountInput <= 0) {
-                defaultBox.classList.remove('hidden');
-                resultsBox.classList.add('hidden');
                 return;
             }
 
-            defaultBox.classList.add('hidden');
-            resultsBox.classList.remove('hidden');
-
-            let newBalance = currentBalance;
-            if (flowType === 'Expense') {
-                newBalance -= amountInput;
-            } else {
-                newBalance += amountInput;
-            }
-
-            const newDailyLimit = Math.max(0, newBalance / daysLeftInMonth);
-
+            const isExpense = (flowTypeSelect.value === 'Expense');
+            const newBalance = isExpense ? (remainingBudget - amt) : (remainingBudget + amt);
+            
             let newDaysLeft = 0;
             if (avgDailySpend > 0 && newBalance > 0) {
                 newDaysLeft = Math.floor(newBalance / avgDailySpend);
-            }
-
-            const daysEarlier = originalDaysLeft - newDaysLeft;
-
-            document.getElementById('previewBalance').innerText = "RM " + newBalance.toFixed(2);
-            document.getElementById('previewLimit').innerText = "RM " + newDailyLimit.toFixed(2) + " / day";
-
-            const shiftElement = document.getElementById('previewShift');
-            const adviceElement = document.getElementById('previewAdvice');
-
-            if (flowType === 'Income') {
-                shiftElement.innerText = "Extends balance duration";
-                shiftElement.className = "text-base font-bold text-emerald-600";
-                adviceElement.innerText = `Adding RM ${amountInput.toFixed(2)} increases your remaining balance to RM ${newBalance.toFixed(2)}.`;
+            } else if (newBalance <= 0) {
+                newDaysLeft = 0;
             } else {
-                if (newBalance <= 0) {
-                    shiftElement.innerText = "Triggers Pokai status";
-                    shiftElement.className = "text-base font-bold text-rose-600";
-                    adviceElement.innerText = "This expense exhausts your remaining balance immediately.";
-                } else if (daysEarlier > 0) {
-                    shiftElement.innerText = `${daysEarlier} day(s) earlier`;
-                    shiftElement.className = "text-base font-bold text-amber-600";
-                    adviceElement.innerText = `Logging this expense brings your projected Pokai date forward by ${daysEarlier} day(s).`;
-                } else {
-                    shiftElement.innerText = "No change in trajectory";
-                    shiftElement.className = "text-base font-bold text-emerald-600";
-                    adviceElement.innerText = "This expense remains within your current financial cushion.";
-                }
+                newDaysLeft = daysLeftInMonth;
             }
-        }
-    </script>
 
+            const daysDiff = newDaysLeft - currentDaysLeft;
+            const newDailyLimit = Math.max(0, newBalance / daysLeftInMonth);
+
+            let statusText = "";
+            let statusClass = "";
+
+            if (isExpense) {
+                if (newBalance <= 0) {
+                    statusText = "Immediate Pokai!";
+                    statusClass = "bg-rose-500 text-white";
+                } else if (daysDiff < 0) {
+                    statusText = `${Math.abs(daysDiff)} day(s) earlier`;
+                    statusClass = "bg-rose-100 text-rose-700 border border-rose-200";
+                } else {
+                    statusText = "Minimal Impact";
+                    statusClass = "bg-slate-100 text-slate-600 border border-slate-200";
+                }
+            } else {
+                statusText = `+${daysDiff} day(s) longer`;
+                statusClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+            }
+
+            previewContent.innerHTML = `
+                <div class="space-y-4 pt-1">
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                        <span class="text-xs text-slate-500 font-medium">New Remaining Balance</span>
+                        <span class="text-sm font-extrabold ${newBalance < 0 ? 'text-rose-600' : 'text-slate-800'}">
+                            RM ${newBalance.toFixed(2)}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                        <span class="text-xs text-slate-500 font-medium">New Recommended Limit</span>
+                        <span class="text-xs font-bold text-indigo-700">
+                            RM ${newDailyLimit.toFixed(2)} / day
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                        <span class="text-xs text-slate-500 font-medium">Pokai Date Shift</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 leading-relaxed">
+                        ${isExpense 
+                            ? `This <strong>RM ${amt.toFixed(2)}</strong> expense reduces your remaining balance to <strong>RM ${newBalance.toFixed(2)}</strong>.`
+                            : `Adding <strong>RM ${amt.toFixed(2)}</strong> income increases your available funds to <strong>RM ${newBalance.toFixed(2)}</strong>.`}
+                    </div>
+                </div>
+            `;
+        }
+
+        flowTypeSelect.addEventListener('change', function () {
+            if (this.value === 'Income') {
+                categoryWrapper.classList.add('hidden');
+            } else {
+                categoryWrapper.classList.remove('hidden');
+            }
+            updatePreview();
+        });
+
+        amountInput.addEventListener('input', updatePreview);
+    </script>
 </body>
+
 </html>
