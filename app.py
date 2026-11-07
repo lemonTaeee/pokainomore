@@ -15,11 +15,36 @@ app = Flask(__name__)
 # ----------------------------------------------------------------------
 # DATABASE CONFIGURATION & SECRET KEY
 # ----------------------------------------------------------------------
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "postgresql+psycopg2://postgres.qdijmccwmoxakkngfsjv:3gGs6QfPXyLqfPfl@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require"
-)
+
+# Retrieve database connection URL from environment variables
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set.")
+
+# Ensure SQLAlchemy uses psycopg2
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://",
+        "postgresql+psycopg2://",
+        1
+    )
+
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg2://",
+        1
+    )
+
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = os.urandom(24).hex()
+
+# Retrieve Flask secret key from environment variables
+app.config["SECRET_KEY"] = (
+    os.environ.get("SECRET_KEY") or os.urandom(24).hex()
+)
 
 db = SQLAlchemy(app)
 
