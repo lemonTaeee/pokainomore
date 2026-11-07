@@ -37,6 +37,7 @@ elif DATABASE_URL.startswith("postgresql://"):
         "postgresql+psycopg2://",
         1
     )
+
 # Display database connection details without exposing credentials
 db_url = make_url(DATABASE_URL)
 
@@ -49,7 +50,6 @@ app.logger.info(
 )
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Retrieve Flask secret key from environment variables
@@ -413,7 +413,7 @@ def add_transaction(student_id):
         student=student,
         student_id=student_id,
         active_page="add_transaction",
-        remaining_budget=round(remaining_balance, 2),
+        remaining_balance=round(remaining_balance, 2),
         days_left_in_month=days_left_in_month,
         avg_daily_spend=round(avg_daily_spend, 2),
         days_left=days_until_pokai,
