@@ -1,8 +1,9 @@
 import calendar
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import csv
 import os
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, Response, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -14,11 +15,16 @@ app = Flask(__name__)
 # ----------------------------------------------------------------------
 # DATABASE CONFIGURATION & SECRET KEY
 # ----------------------------------------------------------------------
-app.config["SQLALCHEMY_DATABASE_URI"] = (
+db_url = os.getenv(
+    "DATABASE_URL",
     "postgresql+psycopg2://postgres.qdijmccwmoxakkngfsjv:3gGs6QfPXyLqfPfl@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 )
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = os.urandom(24).hex()
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", os.urandom(24).hex())
 
 db = SQLAlchemy(app)
 
@@ -121,11 +127,9 @@ def show_dashboard(student_id):
     student = Student.query.get_or_404(student_id)
     now = datetime.now(MYT)
 
-    # 1. Fetch budget
     student_budget = Budget.query.filter_by(student_id=student_id).first()
     total_budget = student_budget.total_budget if student_budget else 500.00
 
-    # 2. Fetch current month transactions ONLY
     current_month_str = now.strftime("%Y-%m")
     all_transactions = (
         Transaction.query.filter_by(student_id=student_id)
@@ -144,7 +148,6 @@ def show_dashboard(student_id):
     effective_budget = total_budget + total_income
     remaining_balance = effective_budget - total_spent
 
-    # 3. Dynamic Chart Trajectory
     sorted_txs = []
     for tx in transactions:
         try:
@@ -174,7 +177,6 @@ def show_dashboard(student_id):
             chart_labels.append(label)
             chart_values.append(val)
 
-    # 4. Time & Pokai Calculations
     _, total_days_in_month = calendar.monthrange(now.year, now.month)
     days_passed = now.day
     days_left_in_month = max(1, total_days_in_month - days_passed + 1)
@@ -200,7 +202,6 @@ def show_dashboard(student_id):
         days_until_pokai = days_left_in_month
         pokai_date_str = "Safe for now"
 
-    # 5. Dynamic Spending Insights Calculations
     highest_expense = None
     lowest_expense = None
     top_category = None
@@ -248,7 +249,7 @@ def show_dashboard(student_id):
         "lowest_expense": lowest_expense,
         "top_category": top_category,
         "days_left_in_month": days_left_in_month,
-"avg_daily_spend": round(avg_daily_spend, 2)
+        "avg_daily_spend": round(avg_daily_spend, 2)
     }
 
     return render_template(
@@ -258,18 +259,77 @@ def show_dashboard(student_id):
         active_page="dashboard",
     )
 
+# ----------------------------------------------------------------------
+# HISTORY & EXPORT ROUTES
+# ----------------------------------------------------------------------
+
 @app.route("/history/<int:student_id>")
 def show_history(student_id):
-    tx_list = Transaction.query.filter_by(student_id=student_id).all()
+    student = Student.query.get_or_404(student_id)
+    
+    flow_type = request.args.get("flow_type", "")
+    category = request.args.get("category", "")
+    search_query = request.args.get("search", "").strip()
+
+    query = Transaction.query.filter_by(student_id=student_id)
+
+    if flow_type == "Income":
+        query = query.filter(Transaction.transaction_type == "Income")
+    elif flow_type == "Expense":
+        query = query.filter(Transaction.transaction_type != "Income")
+
+    if category and category != "All":
+        query = query.filter(Transaction.transaction_type == category)
+
+    if search_query:
+        query = query.filter(Transaction.description.ilike(f"%{search_query}%"))
+
+    tx_list = query.order_by(Transaction.created_at.desc()).all()
+
     return render_template(
         "history.html",
         transactions=tx_list,
         student_id=student_id,
+        student=student,
         active_page="history",
+        selected_flow=flow_type,
+        selected_category=category,
+        search_query=search_query,
     )
+
+@app.route("/export-csv/<int:student_id>")
+def export_csv(student_id):
+    student = Student.query.get_or_404(student_id)
+    transactions = (
+        Transaction.query.filter_by(student_id=student_id)
+        .order_by(Transaction.created_at.desc())
+        .all()
+    )
+
+    def generate_csv():
+        yield "Date & Time,Flow Type,Category,Description,Amount (RM)\n"
+        for t in transactions:
+            t_type = "Income" if t.transaction_type == "Income" else "Expense"
+            category = t.transaction_type if t.transaction_type != "Income" else "Income / Allowance"
+            desc = (t.description or "").replace('"', '""')
+            date_str = t.created_at or ""
+            yield f'"{date_str}","{t_type}","{category}","{desc}","{t.amount:.2f}"\n'
+
+    filename = f"PokaiNoMore_Transactions_{student.username}.csv"
+    return Response(
+        generate_csv(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+# ----------------------------------------------------------------------
+# TRANSACTION CREATION ROUTE
+# ----------------------------------------------------------------------
 
 @app.route("/add-transaction/<int:student_id>", methods=["GET", "POST"])
 def add_transaction(student_id):
+    student = Student.query.get_or_404(student_id)
+
     if request.method == "POST":
         amount = float(request.form.get("amount", 0))
         description = request.form.get("description")
@@ -288,10 +348,44 @@ def add_transaction(student_id):
 
         return redirect(url_for("show_dashboard", student_id=student_id))
 
+    now = datetime.now(MYT)
+    _, total_days_in_month = calendar.monthrange(now.year, now.month)
+    days_passed = now.day
+    days_left_in_month = max(1, total_days_in_month - days_passed + 1)
+
+    student_budget = Budget.query.filter_by(student_id=student_id).first()
+    total_budget = student_budget.total_budget if student_budget else 500.00
+
+    current_month_str = now.strftime("%Y-%m")
+    all_transactions = Transaction.query.filter_by(student_id=student_id).all()
+    transactions = [
+        t for t in all_transactions
+        if t.created_at and t.created_at.startswith(current_month_str)
+    ]
+
+    total_spent = sum(t.amount for t in transactions if t.transaction_type != "Income")
+    total_income = sum(t.amount for t in transactions if t.transaction_type == "Income")
+    remaining_balance = (total_budget + total_income) - total_spent
+
+    avg_daily_spend = (
+        total_spent / days_passed if days_passed > 1 and total_spent > 0 else 0
+    )
+
+    days_until_pokai = (
+        int(remaining_balance // avg_daily_spend)
+        if avg_daily_spend > 0 and remaining_balance > 0
+        else 0
+    )
+
     return render_template(
         "add_transaction.html",
+        student=student,
         student_id=student_id,
         active_page="add_transaction",
+        remaining_budget=round(remaining_balance, 2),
+        days_left_in_month=days_left_in_month,
+        avg_daily_spend=round(avg_daily_spend, 2),
+        days_left=days_until_pokai,
     )
 
 # ----------------------------------------------------------------------

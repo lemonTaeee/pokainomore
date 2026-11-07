@@ -1,49 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PokaiNoMore - History Log</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-slate-50 font-sans text-slate-700 antialiased min-h-screen flex flex-col md:flex-row">
 
-    <!-- INCLUDED REUSABLE SIDEBAR -->
+    <!-- REUSABLE SIDEBAR -->
     {% include 'sidebar.html' %}
 
     <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 p-8 space-y-6 overflow-y-auto">
-        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+    <main class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto w-full">
+
+        <!-- Header Bar with Export Button -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200">
             <div>
-                <h2 class="text-2xl font-bold text-slate-800">Transaction History Log</h2>
-                <p class="text-xs text-slate-400">View and track all recorded transactions</p>
+                <h2 class="text-2xl font-bold text-slate-800">Transaction History</h2>
+                <p class="text-xs text-slate-400">View, filter, and export your historical records</p>
+            </div>
+            
+            <a href="/export-csv/{{ student_id }}"
+                class="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-xs font-semibold flex items-center space-x-2 transition">
+                <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Export CSV Report</span>
+            </a>
+        </div>
+
+        <!-- FILTER TOOLBAR -->
+        <form method="GET" action="/history/{{ student_id }}" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                
+                <!-- Filter: Flow Type -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Flow Type</label>
+                    <select name="flow_type" onchange="this.form.submit()"
+                        class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="" {% if not selected_flow %}selected{% endif %}>All Flows</option>
+                        <option value="Expense" {% if selected_flow == 'Expense' %}selected{% endif %}>Expenses Only</option>
+                        <option value="Income" {% if selected_flow == 'Income' %}selected{% endif %}>Income / Allowance Only</option>
+                    </select>
+                </div>
+
+                <!-- Filter: Category -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Category</label>
+                    <select name="category" onchange="this.form.submit()"
+                        class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="" {% if not selected_category %}selected{% endif %}>All Categories</option>
+                        <option value="Food & Drink" {% if selected_category == 'Food & Drink' %}selected{% endif %}>Food & Drink</option>
+                        <option value="Transportation" {% if selected_category == 'Transportation' %}selected{% endif %}>Transportation</option>
+                        <option value="Yuran" {% if selected_category == 'Yuran' %}selected{% endif %}>Yuran</option>
+                        <option value="Entertainment" {% if selected_category == 'Entertainment' %}selected{% endif %}>Entertainment</option>
+                        <option value="Study Materials" {% if selected_category == 'Study Materials' %}selected{% endif %}>Study Materials</option>
+                        <option value="Groceries" {% if selected_category == 'Groceries' %}selected{% endif %}>Groceries</option>
+                        <option value="General" {% if selected_category == 'General' %}selected{% endif %}>General / Others</option>
+                    </select>
+                </div>
+
+                <!-- Filter: Search Description -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Search Description</label>
+                    <div class="flex space-x-2">
+                        <input type="text" name="search" value="{{ search_query }}" placeholder="e.g. Nasi Ayam, Zus"
+                            class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button type="submit"
+                            class="bg-[#0A3222] hover:bg-[#114630] text-white px-3 py-2.5 rounded-xl text-xs font-semibold transition shrink-0">
+                            Filter
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Active Filters Reset Bar -->
+            {% if selected_flow or selected_category or search_query %}
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <span class="text-slate-500">Showing filtered results</span>
+                <a href="/history/{{ student_id }}" class="text-emerald-700 hover:underline font-semibold">Clear Filters</a>
+            </div>
+            {% endif %}
+        </form>
+
+        <!-- TRANSACTION TABLE CARD -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <th class="py-3 px-4">Date & Time</th>
+                            <th class="py-3 px-4">Flow</th>
+                            <th class="py-3 px-4">Category</th>
+                            <th class="py-3 px-4">Description</th>
+                            <th class="py-3 px-4 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% if transactions %}
+                            {% for t in transactions %}
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="py-3.5 px-4 font-medium text-slate-500 whitespace-nowrap">
+                                    {{ t.created_at if t.created_at else '-' }}
+                                </td>
+                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                    {% if t.transaction_type == "Income" %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Income
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                        Expense
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4 font-semibold text-slate-700 whitespace-nowrap">
+                                    {{ t.transaction_type if t.transaction_type != "Income" else "Income / Allowance" }}
+                                </td>
+                                <td class="py-3.5 px-4 text-slate-600">
+                                    {{ t.description if t.description else '-' }}
+                                </td>
+                                <td class="py-3.5 px-4 text-right font-extrabold whitespace-nowrap {% if t.transaction_type == 'Income' %}text-emerald-700{% else %}text-slate-800{% endif %}">
+                                    {% if t.transaction_type == "Income" %}+{% else %}-{% endif %} RM {{ "%.2f"|format(t.amount) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="py-12 text-center text-slate-400 text-xs">
+                                    No transactions match your query criteria.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase">
-                    <tr>
-                        <th class="p-4">Date</th>
-                        <th class="p-4">Description</th>
-                        <th class="p-4">Type</th>
-                        <th class="p-4">Amount</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for tx in transactions %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-4 text-slate-500">{{ tx.created_at }}</td>
-                        <td class="p-4 font-semibold text-slate-800">{{ tx.description or 'Expense' }}</td>
-                        <td class="p-4"><span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold">{{ tx.transaction_type or 'Expense' }}</span></td>
-                        <td class="p-4 font-bold text-slate-800">RM {{ "%.2f"|format(tx.amount) }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="p-4 text-center text-slate-400">No transactions found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </main>
 
 </body>
