@@ -6,6 +6,7 @@ import os
 from flask import Flask, Response, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy.engine import make_url
 
 # Malaysia Timezone (UTC +8)
 MYT = timezone(timedelta(hours=8))
@@ -36,6 +37,16 @@ elif DATABASE_URL.startswith("postgresql://"):
         "postgresql+psycopg2://",
         1
     )
+# Display database connection details without exposing credentials
+db_url = make_url(DATABASE_URL)
+
+app.logger.info(
+    "Database target: host=%s, port=%s, username=%s, database=%s",
+    db_url.host,
+    db_url.port,
+    db_url.username,
+    db_url.database
+)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 
