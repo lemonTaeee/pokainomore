@@ -3,7 +3,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import csv
 import os
-
 from flask import Flask, Response, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.engine import make_url
@@ -27,6 +26,7 @@ app = Flask(__name__)
 # ----------------------------------------------------------------------
 # DATABASE CONFIGURATION & SECRET KEY
 # ----------------------------------------------------------------------
+from sqlalchemy.engine.url import make_url
 
 # Retrieve database connection URL from Render environment variables.
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -34,22 +34,15 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL environment variable is not set.")
 
+# Force IPv4 Pooler host to use port 6543 if set to 5432
+if "pooler.supabase.com:5432" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
 
-# Ensure SQLAlchemy uses psycopg2.
+# Ensure SQLAlchemy uses psycopg2 driver
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace(
-        "postgres://",
-        "postgresql+psycopg2://",
-        1
-    )
-
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace(
-        "postgresql://",
-        "postgresql+psycopg2://",
-        1
-    )
-
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 # Display database connection details without exposing credentials.
 db_url = make_url(DATABASE_URL)
@@ -63,7 +56,6 @@ print(
     flush=True
 )
 
-
 # Warn if the shared Supabase Session Pooler username looks incomplete.
 if (
     db_url.host
@@ -76,24 +68,20 @@ if (
         flush=True
     )
 
-
 # Configure SQLAlchemy.
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Flask secret key from Render environment variables.
-app.config["SECRET_KEY"] = (
-    os.environ.get("SECRET_KEY") or os.urandom(24).hex()
-)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or os.urandom(24).hex()
 
-# Check database connections before reusing them.
+# FIX ERR_FAILED: Re-verify DB connection before executing queries & recycle stale connections
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_pre_ping": True
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "pool_timeout": 30
 }
-
-
 db = SQLAlchemy(app)
-
 
 # ----------------------------------------------------------------------
 # DATABASE MODELS
