@@ -17,7 +17,7 @@
         <!-- Header -->
         <div class="pb-2 border-b border-slate-200">
             <h2 class="text-2xl font-bold text-slate-800">Add Transaction</h2>
-            <p class="text-xs text-slate-400">Record a new expense or income entry</p>
+            <p class="text-xs text-slate-400">Record a new expense or income entry to keep your budget accurate</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -53,7 +53,7 @@
 
                             <option value="Food & Drink">Food & Drink</option>
                             <option value="Transportation">Transportation</option>
-                            <option value="Yuran">Yuran</option>
+                            <option value="Yuran">Yuran / Fees</option>
                             <option value="Entertainment">Entertainment</option>
                             <option value="Study Materials">Study Materials</option>
                             <option value="Groceries">Groceries</option>
@@ -94,25 +94,24 @@
 
 
             <!-- RIGHT: WHAT-IF PURCHASE SIMULATOR -->
-            <div class="md:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="md:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
 
                 <!-- Simulator Header -->
-                <div class="flex items-center justify-between mb-4 gap-3">
+                <div class="flex items-start justify-between gap-3">
 
                     <div>
                         <h3 class="text-lg font-bold text-slate-800">
-                            What-If Purchase Simulator
+                            Can I Afford This?
                         </h3>
 
-                        <p class="text-xs text-slate-500 mt-1">
-                            Check how a potential purchase affects your remaining budget before spending.
-                            This simulation does not save or modify your actual transactions.
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Test a potential purchase before spending. Don't worry—this is just a preview and won't affect your saved transactions.
                         </p>
                     </div>
 
                     <span
-                        class="shrink-0 px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 rounded-full">
-                        Sandbox Mode
+                        class="shrink-0 px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
+                        Safe Preview
                     </span>
 
                 </div>
@@ -123,75 +122,78 @@
 
                     <!-- Item Description -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">
-                            Item Description
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            What are you thinking of buying?
                         </label>
 
-                        <input type="text" id="simItemName" placeholder="e.g. New Shoes, Concert Ticket"
+                        <input type="text" id="simItemName" placeholder="e.g. New Shoes, Concert Ticket, Coffee"
                             oninput="calculateWhatIf()"
-                            class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
 
                     <!-- Simulated Price -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">
-                            Simulated Price (RM)
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            How much does it cost? (RM)
                         </label>
 
-                        <input type="number" id="simPrice" min="0.01" step="0.01" placeholder="150.00"
+                        <input type="number" id="simPrice" min="0.01" step="0.01" placeholder="0.00"
                             oninput="calculateWhatIf()"
-                            class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            class="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
 
                 </div>
 
 
                 <!-- Simulation Results -->
-                <div id="simResultBox" class="hidden mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div id="simResultBox" class="hidden mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
 
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-                        Simulated Financial Impact
+                    <h4 class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        After-Purchase Preview
                     </h4>
 
-                    <!-- Simulation Status -->
-                    <p id="simStatus"
-                        class="inline-block mb-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600"
-                        aria-live="polite">
-                        Simulation Status
-                    </p>
+                    <!-- Simulation Status Badge -->
+                    <div>
+                        <p id="simStatus"
+                            class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200"
+                            aria-live="polite">
+                            Simulation Status
+                        </p>
+                    </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <!-- 3-Card Output Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
 
                         <!-- New Balance -->
-                        <div class="bg-white p-3 rounded-lg border border-slate-100">
-                            <span class="block text-xs text-slate-400">
-                                New Balance
+                        <div class="bg-white p-3 rounded-xl border border-slate-100">
+                            <span class="block text-[10px] font-semibold text-slate-400">
+                                Balance Left
                             </span>
 
-                            <span id="simNewBalance" class="text-sm font-bold text-slate-800">
+                            <span id="simNewBalance" class="text-xs font-bold text-slate-800 mt-1 block">
                                 RM 0.00
                             </span>
                         </div>
 
                         <!-- New Daily Limit -->
-                        <div class="bg-white p-3 rounded-lg border border-slate-100">
-                            <span class="block text-xs text-slate-400">
+                        <div class="bg-white p-3 rounded-xl border border-slate-100">
+                            <span class="block text-[10px] font-semibold text-slate-400">
                                 New Daily Limit
                             </span>
 
-                            <span id="simNewDailyLimit" class="text-sm font-bold text-slate-800">
+                            <span id="simNewDailyLimit" class="text-xs font-bold text-slate-800 mt-1 block">
                                 RM 0.00
                             </span>
                         </div>
 
                         <!-- Estimated Runway Impact -->
-                        <div class="bg-white p-3 rounded-lg border border-slate-100">
-                            <span class="block text-xs text-slate-400">
-                                Estimated Runway Impact
+                        <div class="bg-white p-3 rounded-xl border border-slate-100">
+                            <span class="block text-[10px] font-semibold text-slate-400">
+                                Pokai Date Shift
                             </span>
 
-                            <span id="simDaysShift" class="text-sm font-bold text-slate-800">
-                                0 days shift
+                            <span id="simDaysShift" class="text-xs font-bold text-slate-800 mt-1 block">
+                                No change
                             </span>
                         </div>
 
@@ -199,17 +201,15 @@
 
 
                     <!-- Simulation Explanation -->
-                    <p class="mt-3 text-xs text-slate-400">
-                        The estimated runway impact assumes your average daily spending remains unchanged.
-                        This is a separate calculation and does not recalculate the dashboard's
-                        Linear Regression prediction.
+                    <p class="text-[11px] text-slate-400 leading-normal">
+                        * This preview projects how long your remaining money will last based on your current daily spending pace.
                     </p>
 
 
-                    <!-- Advice -->
-                    <div id="simAdviceBox" class="mt-3 p-3 rounded-lg bg-white border border-slate-100">
+                    <!-- Friendly Advice Box -->
+                    <div id="simAdviceBox" class="p-3 rounded-xl bg-white border border-slate-200">
 
-                        <p id="simAdvice" class="text-xs text-slate-600"></p>
+                        <p id="simAdvice" class="text-xs text-slate-700 leading-relaxed"></p>
 
                     </div>
 
@@ -227,286 +227,151 @@
         data-days-left-in-month="{{ days_left_in_month | tojson }}"
         data-avg-daily-spend="{{ avg_daily_spend | tojson }}">
 
-            // Convert Flask-provided values into safe JavaScript numbers.
-            function toSafeNumber(value) {
+        // Safe conversion for numerical values passed from Flask
+        function toSafeNumber(value) {
+            const number = Number(value);
+            return Number.isFinite(number) ? number : 0;
+        }
 
-                const number = Number(value);
+        const simulationConfig = document.getElementById("whatIfSimulation").dataset;
 
-                return Number.isFinite(number) ? number : 0;
+        const currentBalance = toSafeNumber(
+            JSON.parse(simulationConfig.currentBalance)
+        );
+
+        const daysLeftInMonth = Math.max(
+            0,
+            toSafeNumber(JSON.parse(simulationConfig.daysLeftInMonth))
+        );
+
+        const avgDailySpend = Math.max(
+            0,
+            toSafeNumber(JSON.parse(simulationConfig.avgDailySpend))
+        );
+
+
+        function calculateWhatIf() {
+
+            const priceInput = parseFloat(
+                document.getElementById("simPrice").value
+            );
+
+            const resultBox = document.getElementById("simResultBox");
+
+            const itemName =
+                document.getElementById("simItemName").value.trim() || "this item";
+
+            const adviceElement = document.getElementById("simAdvice");
+            const adviceBox = document.getElementById("simAdviceBox");
+
+            // Hide results if input is invalid
+            if (!Number.isFinite(priceInput) || priceInput <= 0) {
+                resultBox.classList.add("hidden");
+                return;
             }
 
-            // Values passed from app.py through the script's data attributes.
-            const simulationConfig = document.getElementById("whatIfSimulation").dataset;
+            resultBox.classList.remove("hidden");
 
-            const currentBalance = toSafeNumber(
-                JSON.parse(simulationConfig.currentBalance)
-            );
 
-            const daysLeftInMonth = Math.max(
-                0,
-                toSafeNumber(JSON.parse(simulationConfig.daysLeftInMonth))
-            );
+            // 1. CALCULATE SIMULATED BALANCE & LIMITS
+            const newBalance = currentBalance - priceInput;
+            const hasDaysLeft = daysLeftInMonth > 0;
 
-            const avgDailySpend = Math.max(
-                0,
-                toSafeNumber(JSON.parse(simulationConfig.avgDailySpend))
-            );
+            const currentDailyLimit = hasDaysLeft && currentBalance > 0
+                ? (currentBalance / daysLeftInMonth)
+                : 0;
 
+            const newDailyLimit = hasDaysLeft
+                ? Math.max(0, newBalance / daysLeftInMonth)
+                : 0;
 
-            function calculateWhatIf() {
 
-                // Get simulated purchase price.
-                const priceInput = parseFloat(
-                    document.getElementById("simPrice").value
-                );
+            // 2. RUNWAY IMPACT CALCULATIONS
+            const hasSpendingData = avgDailySpend > 0;
 
-                const resultBox = document.getElementById("simResultBox");
+            const originalDaysLeft = (hasSpendingData && currentBalance > 0)
+                ? Math.floor(currentBalance / avgDailySpend)
+                : 0;
 
-                const itemName =
-                    document.getElementById("simItemName").value.trim() || "this item";
+            const newDaysLeft = (hasSpendingData && newBalance > 0)
+                ? Math.floor(newBalance / avgDailySpend)
+                : 0;
 
-                const adviceElement = document.getElementById("simAdvice");
+            const daysEarlier = hasSpendingData
+                ? Math.max(0, originalDaysLeft - newDaysLeft)
+                : null;
 
-                const adviceBox = document.getElementById("simAdviceBox");
 
+            // 3. GET UI ELEMENTS
+            const balanceElement = document.getElementById("simNewBalance");
+            const dailyLimitElement = document.getElementById("simNewDailyLimit");
+            const shiftElement = document.getElementById("simDaysShift");
+            const statusElement = document.getElementById("simStatus");
 
-                // Hide results if the entered price is invalid.
-                if (!Number.isFinite(priceInput) || priceInput <= 0) {
 
-                    resultBox.classList.add("hidden");
-                    return;
-                }
+            // 4. UPDATE BALANCE CARD
+            balanceElement.innerText = "RM " + newBalance.toFixed(2);
+            balanceElement.className = newBalance < 0
+                ? "text-xs font-bold text-red-600 mt-1 block"
+                : "text-xs font-bold text-slate-800 mt-1 block";
 
-                resultBox.classList.remove("hidden");
 
+            // 5. UPDATE DAILY LIMIT CARD
+            dailyLimitElement.innerText = hasDaysLeft
+                ? "RM " + newDailyLimit.toFixed(2) + " / day"
+                : "N/A";
 
-                // --------------------------------------------------
-                // 1. CALCULATE SIMULATED REMAINING BALANCE
-                // --------------------------------------------------
+            dailyLimitElement.className = hasDaysLeft
+                ? "text-xs font-bold text-indigo-700 mt-1 block"
+                : "text-xs font-bold text-slate-400 mt-1 block";
 
-                const newBalance = currentBalance - priceInput;
 
-
-                // --------------------------------------------------
-                // 2. CALCULATE NEW DAILY SPENDING LIMIT
-                // --------------------------------------------------
-
-                const hasDaysLeft = daysLeftInMonth > 0;
-
-                const newDailyLimit = hasDaysLeft
-                    ? Math.max(0, newBalance / daysLeftInMonth)
-                    : null;
-
-
-                // --------------------------------------------------
-                // 3. ESTIMATE ORIGINAL BALANCE DURATION
-                // --------------------------------------------------
-
-                const hasSpendingData = avgDailySpend > 0;
-
-                const originalDaysLeft =
-                    hasSpendingData && currentBalance > 0
-                        ? Math.floor(currentBalance / avgDailySpend)
-                        : 0;
-
-
-                // --------------------------------------------------
-                // 4. ESTIMATE SIMULATED BALANCE DURATION
-                // --------------------------------------------------
-
-                const newDaysLeft =
-                    hasSpendingData && newBalance > 0
-                        ? Math.floor(newBalance / avgDailySpend)
-                        : 0;
-
-
-                // --------------------------------------------------
-                // 5. CALCULATE ESTIMATED RUNWAY IMPACT
-                // --------------------------------------------------
-
-                const daysEarlier = hasSpendingData
-                    ? Math.max(0, originalDaysLeft - newDaysLeft)
-                    : null;
-
-
-                // Get result elements.
-                const balanceElement =
-                    document.getElementById("simNewBalance");
-
-                const dailyLimitElement =
-                    document.getElementById("simNewDailyLimit");
-
-                const shiftElement =
-                    document.getElementById("simDaysShift");
-
-                const statusElement =
-                    document.getElementById("simStatus");
-
-
-                // --------------------------------------------------
-                // UPDATE NEW BALANCE
-                // --------------------------------------------------
-
-                balanceElement.innerText =
-                    "RM " + newBalance.toFixed(2);
-
-                balanceElement.className = newBalance <= 0
-                    ? "text-sm font-bold text-red-600"
-                    : "text-sm font-bold text-slate-800";
-
-
-                // --------------------------------------------------
-                // UPDATE NEW DAILY SPENDING LIMIT
-                // --------------------------------------------------
-
-                dailyLimitElement.innerText = hasDaysLeft
-                    ? "RM " + newDailyLimit.toFixed(2)
-                    : "Not available";
-
-                dailyLimitElement.className = hasDaysLeft
-                    ? "text-sm font-bold text-slate-800"
-                    : "text-sm font-bold text-slate-400";
-
-
-                // --------------------------------------------------
-                // UPDATE ESTIMATED RUNWAY IMPACT
-                // --------------------------------------------------
-
-                if (newBalance <= 0) {
-
-                    shiftElement.innerText = "Budget exhausted";
-
-                    shiftElement.className =
-                        "text-sm font-bold text-red-600";
-
-                } else if (!hasSpendingData) {
-
-                    shiftElement.innerText = "Insufficient data";
-
-                    shiftElement.className =
-                        "text-sm font-bold text-slate-500";
-
-                } else if (daysEarlier > 0) {
-
-                    shiftElement.innerText =
-                        `${daysEarlier} day(s) earlier`;
-
-                    shiftElement.className =
-                        "text-sm font-bold text-amber-600";
-
-                } else {
-
-                    shiftElement.innerText = "No change";
-
-                    shiftElement.className =
-                        "text-sm font-bold text-emerald-600";
-
-                }
-
-
-                // --------------------------------------------------
-                // DETERMINE SIMULATION STATUS
-                // --------------------------------------------------
-
-                let statusText;
-                let statusClass;
-
-
-                if (newBalance <= 0) {
-
-                    statusText = "Pokai Triggered";
-
-                    statusClass =
-                        "inline-block mb-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700";
-
-                } else if (!hasSpendingData) {
-
-                    statusText = "Insufficient Spending Data";
-
-                    statusClass =
-                        "inline-block mb-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600";
-
-                } else if (!hasDaysLeft) {
-
-                    statusText = "Daily Limit Unavailable";
-
-                    statusClass =
-                        "inline-block mb-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600";
-
-                } else if (newDailyLimit < avgDailySpend) {
-
-                    statusText = "Budget at Risk";
-
-                    statusClass =
-                        "inline-block mb-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700";
-
-                } else {
-
-                    statusText = "Within Budget";
-
-                    statusClass =
-                        "inline-block mb-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700";
-
-                }
-
-
-                statusElement.innerText = statusText;
-                statusElement.className = statusClass;
-
-
-                // --------------------------------------------------
-                // DISPLAY SIMULATION ADVICE
-                // --------------------------------------------------
-
-                if (newBalance <= 0) {
-
-                    adviceElement.innerText =
-                        `Purchasing ${itemName} would use up or exceed your remaining balance. You would not have enough money left in your current budget.`;
-
-                    adviceBox.className =
-                        "mt-3 p-3 rounded-lg bg-red-50 border border-red-100";
-
-
-                } else if (!hasSpendingData) {
-
-                    adviceElement.innerText =
-                        `Your estimated new balance is RM ${newBalance.toFixed(2)}. However, there is not enough average daily spending data to estimate how many days the balance may last.`;
-
-                    adviceBox.className =
-                        "mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200";
-
-
-                } else if (!hasDaysLeft) {
-
-                    adviceElement.innerText =
-                        `Your estimated new balance is RM ${newBalance.toFixed(2)}. The daily spending limit cannot be calculated because there are no remaining days recorded for this month.`;
-
-                    adviceBox.className =
-                        "mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200";
-
-
-                } else if (newDailyLimit < avgDailySpend) {
-
-                    adviceElement.innerText =
-                        `Purchasing ${itemName} would reduce your daily spending limit to RM ${newDailyLimit.toFixed(2)}, which is below your current average daily spending of RM ${avgDailySpend.toFixed(2)}. Consider whether this purchase is necessary.`;
-
-                    adviceBox.className =
-                        "mt-3 p-3 rounded-lg bg-amber-50 border border-amber-100";
-
-
-                } else {
-
-                    adviceElement.innerText =
-                        `After purchasing ${itemName}, your estimated balance would be RM ${newBalance.toFixed(2)} and your new daily spending limit would be RM ${newDailyLimit.toFixed(2)}. The daily limit is still at or above your current average daily spending.`;
-
-                    adviceBox.className =
-                        "mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-100";
-
-                }
-
+            // 6. UPDATE RUNWAY SHIFT CARD
+            if (newBalance < 0) {
+                shiftElement.innerText = "Budget exhausted";
+                shiftElement.className = "text-xs font-bold text-red-600 mt-1 block";
+            } else if (!hasSpendingData) {
+                shiftElement.innerText = "No history yet";
+                shiftElement.className = "text-xs font-bold text-slate-400 mt-1 block";
+            } else if (daysEarlier > 0) {
+                shiftElement.innerText = `${daysEarlier} day(s) earlier`;
+                shiftElement.className = "text-xs font-bold text-amber-600 mt-1 block";
+            } else {
+                shiftElement.innerText = "No change";
+                shiftElement.className = "text-xs font-bold text-emerald-600 mt-1 block";
             }
 
-        </script>
+
+            // 7. STATUS & ADVICE LOGIC (Fixed to evaluate against current daily limit)
+            let statusText = "";
+            let statusClass = "";
+            let adviceHTML = "";
+
+            if (newBalance < 0) {
+                statusText = "Pokai Triggered";
+                statusClass = "bg-red-100 text-red-800 border-red-200";
+                adviceBox.className = "p-3 rounded-xl bg-red-50 border border-red-200 text-red-900";
+                adviceHTML = `<strong>Budget Warning:</strong> Purchasing <strong>${itemName}</strong> (RM ${priceInput.toFixed(2)}) exceeds your remaining balance of <strong>RM ${currentBalance.toFixed(2)}</strong>! You will go negative.`;
+
+            } else if (priceInput <= currentDailyLimit) {
+                statusText = "Within Daily Limit";
+                statusClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                adviceBox.className = "p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900";
+                adviceHTML = `<strong>Safe Purchase:</strong> Spending <strong>RM ${priceInput.toFixed(2)}</strong> is within today's daily limit of <strong>RM ${currentDailyLimit.toFixed(2)}</strong>. Your new daily spending limit for the remaining ${daysLeftInMonth} days will adjust to <strong>RM ${newDailyLimit.toFixed(2)}/day</strong>.`;
+
+            } else {
+                statusText = "Above Daily Limit";
+                statusClass = "bg-amber-100 text-amber-800 border-amber-200";
+                adviceBox.className = "p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900";
+                adviceHTML = `<strong>Think Carefully:</strong> Spending <strong>RM ${priceInput.toFixed(2)}</strong> exceeds today's recommended limit of <strong>RM ${currentDailyLimit.toFixed(2)}</strong>. It will lower your safe daily budget for the remaining ${daysLeftInMonth} days to <strong>RM ${newDailyLimit.toFixed(2)}/day</strong>.`;
+            }
+
+            statusElement.innerText = statusText;
+            statusElement.className = `inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${statusClass}`;
+            adviceElement.innerHTML = adviceHTML;
+        }
+
+    </script>
 
 </body>
 
